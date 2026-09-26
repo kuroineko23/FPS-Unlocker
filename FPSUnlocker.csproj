@@ -1,23 +1,28 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
-    <AssemblyName>FPS Unlocker</AssemblyName>
-    <RootNamespace>FPSUnlock</RootNamespace>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>FPSUnlocker</AssemblyName>
+    <Product>FPS Unlock</Product>
+    <Version>1.0.0</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json;
+      https://nuget.samboy.dev/v3/index.json
+    </RestoreAdditionalProjectSources>
+    <RootNamespace>FPSUnlocker</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="BepInEx">
-      <HintPath>../../core/BepInEx.dll</HintPath>
-    </Reference>
-
-    <Reference Include="UnityEngine">
-      <HintPath>../../../Windose_Data/Managed/UnityEngine.dll</HintPath>
-    </Reference>
-
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>../../../Windose_Data/Managed/UnityEngine.CoreModule.dll</HintPath>
-    </Reference>
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.*" IncludeAssets="compile" />
+    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\BepInEx.Utility.IL2CPP\IL2CPP_netFm\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

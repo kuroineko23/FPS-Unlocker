@@ -1,45 +1,55 @@
-using BepInEx;
+﻿using BepInEx;
 using BepInEx.Configuration;
-using UnityEngine;
-using System;
-using System.Reflection;
+using BepInEx.Logging;
+using BepInEx.Unity.IL2CPP;
 using System.IO;
+using UnityEngine;
 
-[BepInPlugin("fps.unlocker", "FPS Unlocker", "1.0")]
-public class FPSUnlock : BaseUnityPlugin
+namespace FPSUnlocker;
+
+[BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+public class FPSUnlock : BasePlugin
 {
-    private ConfigEntry<int> maxFPS;
-    private int lastFPS;
-    private PropertyInfo vSyncCountProp;
-    private PropertyInfo targetFrameRateProp;
+    internal static new ManualLogSource Log;
+    private static ConfigEntry<int> Framerate;
+    private static ConfigEntry<vSyncList> vSync;
+    private static vSyncList _originalVsync = vSyncList.Default;
+    private static int lastFps;
+
     private FileSystemWatcher watcher;
 
-    void Awake()
+    public override void Load()
     {
-        maxFPS = Config.Bind(
-            "General",
-            "MaxFPS",
-            144,
-            "Maximum FPS for the game"
-        );
+        // Plugin startup logic
+        Log = base.Log;
+        Log.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
 
-        lastFPS = maxFPS.Value;
+        Log.LogInfo($"Original Framerate: {Application.targetFrameRate}");
+        Log.LogInfo($"Original vSync: {QualitySettings.vSyncCount}");
 
-        var qsType = typeof(QualitySettings);
-        var appType = typeof(Application);
+        vSync = Config.Bind("Framerate Override", "vSync", vSyncList.Default, "Force specified vsync mode.");
+        Framerate = Config.Bind("Framerate Override", "Target Framerate", Application.targetFrameRate, "Force specified target Framerate. Only works if vSync is Off. Set -1 for unlimited.");
 
-        vSyncCountProp = qsType.GetProperty("vSyncCount", BindingFlags.Public | BindingFlags.Static);
-        targetFrameRateProp = appType.GetProperty("targetFrameRate", BindingFlags.Public | BindingFlags.Static);
+        lastFps = Framerate.Value;
 
-        ApplyFPS(lastFPS);
-
-        watcher = new FileSystemWatcher(Path.GetDirectoryName(Config.ConfigFilePath));
-        watcher.Filter = Path.GetFileName(Config.ConfigFilePath);
-        watcher.NotifyFilter = NotifyFilters.LastWrite;
+        watcher = new FileSystemWatcher(Path.GetDirectoryName(Config.ConfigFilePath))
+        {
+            Filter = Path.GetFileName(Config.ConfigFilePath),
+            NotifyFilter = NotifyFilters.LastWrite
+        };
         watcher.Changed += OnConfigChanged;
         watcher.EnableRaisingEvents = true;
 
-        Logger.LogInfo($"FPS Unlocker started. Initial MaxFPS: {lastFPS}");
+        ApplySettings();
+    }
+
+    private static void ApplySettings()
+    {
+        QualitySettings.vSyncCount = (int)vSync.Value;
+        Application.targetFrameRate = Framerate.Value;
+
+        Log.LogInfo($"Current Framerate: {Application.targetFrameRate}");
+        Log.LogInfo($"Current vSync: {QualitySettings.vSyncCount}");
     }
 
     private void OnConfigChanged(object sender, FileSystemEventArgs e)
@@ -47,20 +57,22 @@ public class FPSUnlock : BaseUnityPlugin
         try
         {
             Config.Reload();
-            int currentFPS = maxFPS.Value;
-            if (currentFPS != lastFPS)
+            int currentFPS = Framerate.Value;
+            int currentVSync = (int)vSync.Value;
+            ;
+            if (currentFPS != lastFps || currentVSync != (int)_originalVsync)
             {
-                lastFPS = currentFPS;
-                ApplyFPS(lastFPS);
-                Logger.LogInfo($"FPS updated in real time: {lastFPS}");
+                ApplySettings();
             }
         }
         catch { }
     }
 
-    private void ApplyFPS(int fps)
+    private enum vSyncList
     {
-        vSyncCountProp?.SetValue(null, 0);
-        targetFrameRateProp?.SetValue(null, fps);
+        Default = -1,
+        On = 1,
+        Off = 0,
+        Half = 2
     }
 }
