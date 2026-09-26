@@ -2,6 +2,7 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
+using System;
 using System.IO;
 using UnityEngine;
 
@@ -39,6 +40,7 @@ public class FPSUnlock : BasePlugin
         };
         watcher.Changed += OnConfigChanged;
         watcher.EnableRaisingEvents = true;
+        Log.LogInfo($"Config Path: {Path.GetFileName(Config.ConfigFilePath)}");
 
         ApplySettings();
     }
@@ -54,18 +56,16 @@ public class FPSUnlock : BasePlugin
 
     private void OnConfigChanged(object sender, FileSystemEventArgs e)
     {
+        Log.LogInfo($"Configuration changed!");
         try
         {
             Config.Reload();
-            int currentFPS = Framerate.Value;
-            int currentVSync = (int)vSync.Value;
-            ;
-            if (currentFPS != lastFps || currentVSync != (int)_originalVsync)
-            {
-                ApplySettings();
-            }
+            ApplySettings();
         }
-        catch { }
+        catch(Exception ex)
+        {
+            Log.LogError(ex.Message);
+        }
     }
 
     private enum vSyncList
